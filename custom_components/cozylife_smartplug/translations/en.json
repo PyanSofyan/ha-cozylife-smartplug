@@ -1,0 +1,20 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Add CozyLife Smart Plug",
+                "description": "Set up your device",
+                "data": {
+                    "ip_address": "IP Address",
+                    "device_name": "Device Name"
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Failed to connect to device"
+        },
+        "abort": {
+            "already_configured": "Device is already configured"
+        }
+    }
+}
