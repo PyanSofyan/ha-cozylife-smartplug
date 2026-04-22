@@ -1,0 +1,9 @@
+{
+    "name": "CozyLife Smart Plug",
+    "render_readme": true,
+    "domain": "cozylife_smartplug",
+    "documentation": "https://github.com/PyanSofyan/ha-cozylife-smartplug",
+    "issue_tracker": "https://github.com/PyanSofyan/ha-cozylife-smartplug/issues",
+    "content_in_root": false,
+    "homeassistant": "2025.1.0"
+}
