@@ -2,7 +2,7 @@
   "domain": "cozylife_smartplug",
   "name": "CozyLife Smart Plug",
   "version": "1.0.0",
-  "documentation": "https://github.com/PyanSofyan/ha_cozylife_smartplug",
+  "documentation": "https://github.com/PyanSofyan/ha-cozylife-smartplug",
   "dependencies": [],
   "codeowners": ["@PyanSofyan"],
   "requirements": [],
