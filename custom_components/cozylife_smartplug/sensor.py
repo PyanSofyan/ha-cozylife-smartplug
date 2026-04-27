@@ -10,6 +10,8 @@ from homeassistant.helpers import entity_registry as er
 from homeassistant.components.recorder import get_instance
 from homeassistant.components.recorder.statistics import statistics_during_period
 from homeassistant.util import dt as dt_util
+from homeassistant.helpers.restore_state import RestoreEntity
+from datetime import timezone
 from homeassistant.const import (
     UnitOfPower,
     UnitOfElectricCurrent,
@@ -86,17 +88,11 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
             sensor_unit=UnitOfElectricPotential.VOLT,
             sensor_state_class=SensorStateClass.MEASUREMENT
         ),
-        CozyLifeSensor(
+        CozyLifeTotalEnergySensor(
             coordinator=coordinator, 
             client=client, 
             ip_address=ip_address, 
-            device_name=device_name,
-            sensor_id=ENERGY_ID, 
-            sensor_name=ENERGY_NAME,
-            sensor_icon="mdi:lightning-bolt",
-            sensor_class=SensorDeviceClass.ENERGY,
-            sensor_unit=UnitOfEnergy.KILO_WATT_HOUR,
-            sensor_state_class=SensorStateClass.TOTAL_INCREASING
+            device_name=device_name
         ),
         CozyLifePeriodEnergySensor(
             coordinator=coordinator,
@@ -172,6 +168,120 @@ class CozyLifeSensor(CoordinatorEntity, SensorEntity):
         if self._sensor_id in (CURRENT_ID, ENERGY_ID):
             return float(value) / 1000.0
         return value
+
+class CozyLifeTotalEnergySensor(CoordinatorEntity, SensorEntity, RestoreEntity):
+    """Total energy — calculated from daily usage (UTC), never reset, continuously accumulated."""
+
+    def __init__(self, coordinator, client, ip_address, device_name):
+        super().__init__(coordinator)
+        self._client      = client
+        self._ip_address  = ip_address
+        self._device_name = device_name
+
+        self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+        self._attr_device_class = SensorDeviceClass.ENERGY
+        self._attr_state_class = SensorStateClass.TOTAL_INCREASING
+
+        self._total: float = 0.0
+        self._last_raw: float | None = None
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+
+        last_state = await self.async_get_last_state()
+        if last_state and last_state.attributes:
+            try:
+                self._total    = float(last_state.attributes.get("total_kwh", 0.0))
+                last_raw       = last_state.attributes.get("last_raw")
+                self._last_raw = float(last_raw) if last_raw is not None else None
+                _LOGGER.debug("Restored total energy: %.3f kWh", self._total)
+            except (ValueError, TypeError) as e:
+                _LOGGER.warning("Failed restore state: %s", e)
+
+    @property
+    def native_value(self) -> float | None:
+        if self._last_raw is None:
+            return None
+        return round(self._total, 3)
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        return DeviceInfo(
+            identifiers={(DOMAIN, self._ip_address)},
+            name=self._device_name,
+            manufacturer=MANUFACTURER,
+            model=MODEL,
+        )
+
+    @property
+    def name(self) -> str:
+        return ENERGY_NAME
+
+    @property
+    def icon(self):
+        return "mdi:lightning-bolt"
+
+    @property
+    def unique_id(self) -> str:
+        return f"cozylife_plug_{self._ip_address}_{ENERGY_ID}"
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return {
+            "total_kwh": self._total,
+            "last_raw":  self._last_raw,
+        }
+        
+
+    def _is_utc_midnight_reset(self, current_raw: float, last_raw: float) -> bool:
+        """Detect whether the value drop is due to the 00:00 UTC reset."""
+        now_utc = dt_util.utcnow()
+        
+        # Tolerance window: 00:00 - 00:05 UTC
+        is_near_midnight = (
+            now_utc.hour == 0 and now_utc.minute <= 5
+        )
+        
+        # Reset UTC: value drops significantly AND time is near midnight UTC
+        drop = last_raw - current_raw
+        is_significant_drop = current_raw < (last_raw * 0.5)  # down more than 50%
+        
+        return is_near_midnight and is_significant_drop
+
+    def _handle_coordinator_update(self) -> None:
+        if not self.coordinator.data:
+            super()._handle_coordinator_update()
+            return
+
+        raw_value = self.coordinator.data.get(str(ENERGY_ID))
+        if raw_value is None:
+            super()._handle_coordinator_update()
+            return
+
+        current_raw = float(raw_value) / 1000.0
+
+        if self._last_raw is not None:
+            if current_raw >= self._last_raw:
+                # Normal — add difference
+                self._total += current_raw - self._last_raw
+
+            elif self._is_utc_midnight_reset(current_raw, self._last_raw):
+                # Reset 00:00 UTC — add current_raw as new consumption
+                _LOGGER.debug(
+                    "UTC midnight reset: last=%.3f current=%.3f",
+                    self._last_raw, current_raw
+                )
+                self._total += current_raw
+
+            else:
+                # Power loss — value drops but not midnight reset
+                _LOGGER.debug(
+                    "Power loss detected: last=%.3f current=%.3f, skip accumulation",
+                    self._last_raw, current_raw
+                )
+
+        self._last_raw = current_raw
+        super()._handle_coordinator_update()
 
 class CozyLifePeriodEnergySensor(CoordinatorEntity, SensorEntity):
     """Statistic-based Daily & Monthly Energy Sensor."""
