@@ -30,16 +30,17 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     coordinator     = entry_hass_data[COORDINATOR]
     config          = entry_hass_data["data"]
 
-    ip_address  = config[CONF_IP_ADDRESS]
-    device_name = config[CONF_DEVICE_NAME]
+    ip_address   = config[CONF_IP_ADDRESS]
+    device_name  = config[CONF_DEVICE_NAME]
 
     client = coordinator.client
 
+    # Power On State tersedia untuk semua device type (Smart Plug & Smart Switch)
     async_add_entities([
         CozyLifeSelect(
-            coordinator=coordinator, 
-            client=client, 
-            ip_address=ip_address, 
+            coordinator=coordinator,
+            client=client,
+            ip_address=ip_address,
             device_name=device_name,
             select_name=ON_STATE_NAME,
             select_icon="mdi:power-plug"

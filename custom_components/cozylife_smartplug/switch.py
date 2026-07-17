@@ -11,6 +11,8 @@ from .const import (
     DOMAIN,
     CONF_IP_ADDRESS,
     CONF_DEVICE_NAME,
+    CONF_DEVICE_TYPE,
+    DEVICE_TYPE_SMART_PLUG,
     MANUFACTURER,
     MODEL,
     UPDATE_INTERVAL,
@@ -30,32 +32,39 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     coordinator     = entry_hass_data[COORDINATOR]
     config          = entry_hass_data["data"]
 
-    ip_address  = config[CONF_IP_ADDRESS]
-    device_name = config[CONF_DEVICE_NAME]
+    ip_address   = config[CONF_IP_ADDRESS]
+    device_name  = config[CONF_DEVICE_NAME]
+    device_type  = config.get(CONF_DEVICE_TYPE, DEVICE_TYPE_SMART_PLUG)
 
     client = coordinator.client
 
-    async_add_entities([
+    entities = [
         CozyLifeSwitch(
-            coordinator=coordinator, 
-            client=client, 
-            ip_address=ip_address, 
-            device_name=device_name,  
-            switch_id=SWITCH_ID, 
-            switch_name=SWITCH_NAME, 
+            coordinator=coordinator,
+            client=client,
+            ip_address=ip_address,
+            device_name=device_name,
+            switch_id=SWITCH_ID,
+            switch_name=SWITCH_NAME,
             switch_icon="mdi:power"
         ),
+    ]
 
-        CozyLifeSwitch(
-            coordinator=coordinator, 
-            client=client, 
-            ip_address=ip_address, 
-            device_name=device_name,  
-            switch_id=OVERCURRENT_PROTECT_ID, 
-            switch_name=OVERCURRENT_PROTECT_NAME, 
-            switch_icon="mdi:wave-undercurrent"
-        ),
-    ], update_before_add=True)
+    # Overcurrent Protection hanya tersedia di Smart Plug
+    if device_type == DEVICE_TYPE_SMART_PLUG:
+        entities.append(
+            CozyLifeSwitch(
+                coordinator=coordinator,
+                client=client,
+                ip_address=ip_address,
+                device_name=device_name,
+                switch_id=OVERCURRENT_PROTECT_ID,
+                switch_name=OVERCURRENT_PROTECT_NAME,
+                switch_icon="mdi:wave-undercurrent"
+            )
+        )
+
+    async_add_entities(entities, update_before_add=True)
 
 
 class CozyLifeSwitch(CoordinatorEntity, SwitchEntity):

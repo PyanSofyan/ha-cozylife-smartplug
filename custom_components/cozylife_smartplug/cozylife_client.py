@@ -15,15 +15,17 @@ from .const import (
     ENERGY_ID,
     CMD_SET,
     CMD_QUERY,
+    DEVICE_TYPE_SMART_PLUG,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class CozyLifeClient:
-    def __init__(self, ip, port=5555):
+    def __init__(self, ip, port=5555, device_type=None):
         self.ip = ip
         self.port = port
+        self._device_type = device_type or DEVICE_TYPE_SMART_PLUG
         self._lock = threading.Lock()
         self._connect_timeout = 3
         self._read_timeout = 2
@@ -107,18 +109,25 @@ class CozyLifeClient:
             return False
 
     def query_state(self) -> dict | None:
+        # Tentukan attr yang di-query berdasarkan device type
+        if self._device_type == DEVICE_TYPE_SMART_PLUG:
+            attr = [
+                SWITCH_ID, ON_STATE_ID, CURRENT_ID, POWER_ID,
+                VOLTAGE_ID, OVERCURRENT_PROTECT_ID, ENERGY_ID,
+            ]
+        else:
+            # Smart Switch: hanya Switch dan Power On State
+            attr = [SWITCH_ID, ON_STATE_ID]
+
         with self._lock:
             command = {
                 "cmd": CMD_QUERY,
                 "pv": 0,
                 "sn": self._get_sn(),
-                "msg": {
-                    "attr": [
-                        SWITCH_ID, ON_STATE_ID, CURRENT_ID, POWER_ID, 
-                        VOLTAGE_ID, OVERCURRENT_PROTECT_ID, ENERGY_ID,
-                    ]
-                },
+                "msg": {"attr": attr},
             }
+            payload = json.dumps(command, separators=(',', ':')) + "\r\n"
+            _LOGGER.debug("Command: %s", payload)
             response = self._send_message(command)
         if response and response.get("msg"):
             return response["msg"].get("data", {})

@@ -4,8 +4,12 @@ DOMAIN = "cozylife_smartplug"
 MANUFACTURER = "CozyLife"
 MODEL = "Smart Plug"
 
-CONF_IP_ADDRESS  = "ip_address"
-CONF_DEVICE_NAME = "device_name"
+CONF_IP_ADDRESS   = "ip_address"
+CONF_DEVICE_NAME  = "device_name"
+CONF_DEVICE_TYPE  = "device_type"
+
+DEVICE_TYPE_SMART_PLUG   = "smart_plug"
+DEVICE_TYPE_SMART_SWITCH = "smart_switch"
 
 UPDATE_INTERVAL = 10
 

@@ -22,6 +22,8 @@ from .const import (
     DOMAIN,
     CONF_IP_ADDRESS,
     CONF_DEVICE_NAME,
+    CONF_DEVICE_TYPE,
+    DEVICE_TYPE_SMART_PLUG,
     MANUFACTURER,
     MODEL,
     UPDATE_INTERVAL,
@@ -46,69 +48,72 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     coordinator     = entry_hass_data[COORDINATOR]
     config          = entry_hass_data["data"]
 
-    ip_address  = config[CONF_IP_ADDRESS]
-    device_name = config[CONF_DEVICE_NAME]
+    ip_address   = config[CONF_IP_ADDRESS]
+    device_name  = config[CONF_DEVICE_NAME]
+    device_type  = config.get(CONF_DEVICE_TYPE, DEVICE_TYPE_SMART_PLUG)
 
     client = coordinator.client
 
-    async_add_entities([
-        CozyLifeSensor(
-            coordinator=coordinator, 
-            client=client, 
-            ip_address=ip_address, 
-            device_name=device_name, 
-            sensor_id=CURRENT_ID, 
-            sensor_name=CURRENT_NAME,
-            sensor_icon="mdi:current-ac",
-            sensor_class=SensorDeviceClass.CURRENT,
-            sensor_unit=UnitOfElectricCurrent.AMPERE,
-            sensor_state_class=SensorStateClass.MEASUREMENT
-        ),
-        CozyLifeSensor(
-            coordinator=coordinator, 
-            client=client, 
-            ip_address=ip_address, 
-            device_name=device_name, 
-            sensor_id=POWER_ID, 
-            sensor_name=POWER_NAME,            
-            sensor_icon="mdi:flash",
-            sensor_class=SensorDeviceClass.POWER, 
-            sensor_unit=UnitOfPower.WATT,
-            sensor_state_class=SensorStateClass.MEASUREMENT
-        ),
-        CozyLifeSensor(
-            coordinator=coordinator, 
-            client=client, 
-            ip_address=ip_address, 
-            device_name=device_name, 
-            sensor_id=VOLTAGE_ID, 
-            sensor_name=VOLTAGE_NAME,
-            sensor_icon="mdi:sine-wave",
-            sensor_class=SensorDeviceClass.VOLTAGE,
-            sensor_unit=UnitOfElectricPotential.VOLT,
-            sensor_state_class=SensorStateClass.MEASUREMENT
-        ),
-        CozyLifeTotalEnergySensor(
-            coordinator=coordinator, 
-            client=client, 
-            ip_address=ip_address, 
-            device_name=device_name
-        ),
-        CozyLifePeriodEnergySensor(
-            coordinator=coordinator,
-            ip_address=ip_address, 
-            device_name=device_name,
-            period="day",
-            sensor_name=ENERGY_TODAY
-        ),
-        CozyLifePeriodEnergySensor(
-            coordinator=coordinator,
-            ip_address=ip_address, 
-            device_name=device_name,
-            period="month",
-            sensor_name=ENERGY_MONTH
-        ),
-    ], update_before_add=True)
+    # Sensor Current, Power, Voltage, Energy hanya tersedia di Smart Plug
+    if device_type == DEVICE_TYPE_SMART_PLUG:
+        async_add_entities([
+            CozyLifeSensor(
+                coordinator=coordinator,
+                client=client,
+                ip_address=ip_address,
+                device_name=device_name,
+                sensor_id=CURRENT_ID,
+                sensor_name=CURRENT_NAME,
+                sensor_icon="mdi:current-ac",
+                sensor_class=SensorDeviceClass.CURRENT,
+                sensor_unit=UnitOfElectricCurrent.AMPERE,
+                sensor_state_class=SensorStateClass.MEASUREMENT
+            ),
+            CozyLifeSensor(
+                coordinator=coordinator,
+                client=client,
+                ip_address=ip_address,
+                device_name=device_name,
+                sensor_id=POWER_ID,
+                sensor_name=POWER_NAME,
+                sensor_icon="mdi:flash",
+                sensor_class=SensorDeviceClass.POWER,
+                sensor_unit=UnitOfPower.WATT,
+                sensor_state_class=SensorStateClass.MEASUREMENT
+            ),
+            CozyLifeSensor(
+                coordinator=coordinator,
+                client=client,
+                ip_address=ip_address,
+                device_name=device_name,
+                sensor_id=VOLTAGE_ID,
+                sensor_name=VOLTAGE_NAME,
+                sensor_icon="mdi:sine-wave",
+                sensor_class=SensorDeviceClass.VOLTAGE,
+                sensor_unit=UnitOfElectricPotential.VOLT,
+                sensor_state_class=SensorStateClass.MEASUREMENT
+            ),
+            CozyLifeTotalEnergySensor(
+                coordinator=coordinator,
+                client=client,
+                ip_address=ip_address,
+                device_name=device_name
+            ),
+            CozyLifePeriodEnergySensor(
+                coordinator=coordinator,
+                ip_address=ip_address,
+                device_name=device_name,
+                period="day",
+                sensor_name=ENERGY_TODAY
+            ),
+            CozyLifePeriodEnergySensor(
+                coordinator=coordinator,
+                ip_address=ip_address,
+                device_name=device_name,
+                period="month",
+                sensor_name=ENERGY_MONTH
+            ),
+        ], update_before_add=True)
 
 class CozyLifeSensor(CoordinatorEntity, SensorEntity):
     """CozyLife Smart Plug Sensor Entity."""

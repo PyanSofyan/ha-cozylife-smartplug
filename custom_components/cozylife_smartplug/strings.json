@@ -2,11 +2,12 @@
     "config": {
         "step": {
             "user": {
-                "title": "Add CozyLife Smart Plug",
+                "title": "Add CozyLife Device",
                 "description": "Set up your device",
                 "data": {
                     "ip_address": "IP Address",
-                    "device_name": "Device Name"
+                    "device_name": "Device Name",
+                    "device_type": "Device Type"
                 }
             }
         },

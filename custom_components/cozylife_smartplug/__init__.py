@@ -2,7 +2,7 @@
 
 import logging
 from homeassistant.const import Platform
-from .const import DOMAIN, CONF_IP_ADDRESS, UPDATE_INTERVAL
+from .const import DOMAIN, CONF_IP_ADDRESS, CONF_DEVICE_TYPE, DEVICE_TYPE_SMART_PLUG, UPDATE_INTERVAL
 from .coordinator import CozyLifeCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -17,12 +17,12 @@ async def async_setup(hass, config):
 async def async_setup_entry(hass, entry):
     """Load integration and setup platform."""
     hass.data.setdefault(DOMAIN, {})
-    hass.data[DOMAIN][entry.entry_id] = entry.data
 
     coordinator = CozyLifeCoordinator(
         hass=hass,
         ip_address=entry.data[CONF_IP_ADDRESS],
         update_interval=UPDATE_INTERVAL,
+        device_type=entry.data.get(CONF_DEVICE_TYPE, DEVICE_TYPE_SMART_PLUG),
     )
 
     await coordinator.async_config_entry_first_refresh()
