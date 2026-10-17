@@ -20,19 +20,30 @@ async def async_setup_entry(hass, entry):
 
     coordinator = CozyLifeCoordinator(
         hass=hass,
-        ip_address=entry.data[CONF_IP_ADDRESS],
+        ip_address=entry.data.get(CONF_IP_ADDRESS, ""),
         update_interval=UPDATE_INTERVAL,
         device_type=entry.data.get(CONF_DEVICE_TYPE, DEVICE_TYPE_SMART_PLUG),
+        entry=entry,
     )
 
-    await coordinator.async_config_entry_first_refresh()
+    try:
+        await coordinator.async_initialize()
+        await coordinator.async_config_entry_first_refresh()
+    except BaseException:
+        await coordinator.async_close()
+        raise
     
     hass.data[DOMAIN][entry.entry_id] = {
         COORDINATOR: coordinator,
         "data":    entry.data,
     }
   
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    try:
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+    except BaseException:
+        await coordinator.async_close()
+        hass.data[DOMAIN].pop(entry.entry_id, None)
+        raise
     return True
 
 
@@ -40,5 +51,6 @@ async def async_unload_entry(hass, entry):
     """Unload integration and config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
+        await hass.data[DOMAIN][entry.entry_id][COORDINATOR].async_close()
         hass.data[DOMAIN].pop(entry.entry_id)
     return unload_ok

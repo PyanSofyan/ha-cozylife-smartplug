@@ -48,7 +48,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     coordinator     = entry_hass_data[COORDINATOR]
     config          = entry_hass_data["data"]
 
-    ip_address   = config[CONF_IP_ADDRESS]
+    ip_address   = coordinator.entity_key
     device_name  = config[CONF_DEVICE_NAME]
     device_type  = config.get(CONF_DEVICE_TYPE, DEVICE_TYPE_SMART_PLUG)
 
@@ -150,7 +150,7 @@ class CozyLifeSensor(CoordinatorEntity, SensorEntity):
             identifiers={(DOMAIN, self._ip_address)},
             name=self._device_name,
             manufacturer=MANUFACTURER,
-            model=MODEL,
+            model=self.coordinator.model,
         )
 
     @property
@@ -170,6 +170,8 @@ class CozyLifeSensor(CoordinatorEntity, SensorEntity):
         if not self.coordinator.data:
             return None
         value = self.coordinator.data.get(str(self._sensor_id))
+        if value is None:
+            return None
         if self._sensor_id in (CURRENT_ID, ENERGY_ID):
             return float(value) / 1000.0
         return value
@@ -215,7 +217,7 @@ class CozyLifeTotalEnergySensor(CoordinatorEntity, SensorEntity, RestoreEntity):
             identifiers={(DOMAIN, self._ip_address)},
             name=self._device_name,
             manufacturer=MANUFACTURER,
-            model=MODEL,
+            model=self.coordinator.model,
         )
 
     @property
@@ -310,7 +312,7 @@ class CozyLifePeriodEnergySensor(CoordinatorEntity, SensorEntity):
             identifiers={(DOMAIN, self._ip_address)},
             name=self._device_name,
             manufacturer=MANUFACTURER,
-            model=MODEL,
+            model=self.coordinator.model,
         )
 
     @property

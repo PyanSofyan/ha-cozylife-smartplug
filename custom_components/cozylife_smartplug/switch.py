@@ -32,7 +32,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     coordinator     = entry_hass_data[COORDINATOR]
     config          = entry_hass_data["data"]
 
-    ip_address   = config[CONF_IP_ADDRESS]
+    ip_address   = coordinator.entity_key
     device_name  = config[CONF_DEVICE_NAME]
     device_type  = config.get(CONF_DEVICE_TYPE, DEVICE_TYPE_SMART_PLUG)
 
@@ -96,7 +96,7 @@ class CozyLifeSwitch(CoordinatorEntity, SwitchEntity):
             identifiers={(DOMAIN, self._ip_address)},
             name=self._device_name,
             manufacturer=MANUFACTURER,
-            model=MODEL,
+            model=self.coordinator.model,
         )
 
     @property
@@ -110,6 +110,10 @@ class CozyLifeSwitch(CoordinatorEntity, SwitchEntity):
     @property
     def unique_id(self) -> str:
         return f"cozylife_plug_{self._ip_address}_{self._switch_id}"
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        return self.coordinator.transport_attributes
 
     @property
     def is_on(self) -> bool:
@@ -127,14 +131,11 @@ class CozyLifeSwitch(CoordinatorEntity, SwitchEntity):
     async def _async_set_switch(self, value: int) -> None:
         attr = [self._switch_id]
         data = {str(self._switch_id): value}
-        ack = await self.hass.async_add_executor_job(
-            self._client.set_state, attr, data
-        )
-        if ack:
-            self.coordinator.data.update(ack)
-        
-        self._optimistic_state = None
-        self.async_write_ha_state()
+        try:
+            await self.coordinator.async_set_state(attr, data)
+        finally:
+            self._optimistic_state = None
+            self.async_write_ha_state()
 
     async def async_turn_on(self, **kwargs):
         self._optimistic_state = True
@@ -145,4 +146,3 @@ class CozyLifeSwitch(CoordinatorEntity, SwitchEntity):
         self._optimistic_state = False
         self.async_write_ha_state()
         await self._async_set_switch(0)
-        

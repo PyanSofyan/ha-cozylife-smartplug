@@ -30,7 +30,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     coordinator     = entry_hass_data[COORDINATOR]
     config          = entry_hass_data["data"]
 
-    ip_address   = config[CONF_IP_ADDRESS]
+    ip_address   = coordinator.entity_key
     device_name  = config[CONF_DEVICE_NAME]
 
     client = coordinator.client
@@ -65,7 +65,7 @@ class CozyLifeSelect(CoordinatorEntity, SelectEntity):
             identifiers={(DOMAIN, self._ip_address)},
             name=self._device_name,
             manufacturer=MANUFACTURER,
-            model=MODEL,
+            model=self.coordinator.model,
         )
 
     @property
@@ -110,11 +110,8 @@ class CozyLifeSelect(CoordinatorEntity, SelectEntity):
 
         attr = [ON_STATE_ID]
         data = {str(ON_STATE_ID): value}
-        ack = await self.hass.async_add_executor_job(
-            self._client.set_state, attr, data
-        )
-        if ack:
-            self.coordinator.data.update(ack)
-
-        self._optimistic_option = None
-        self.async_write_ha_state()
+        try:
+            await self.coordinator.async_set_state(attr, data)
+        finally:
+            self._optimistic_option = None
+            self.async_write_ha_state()

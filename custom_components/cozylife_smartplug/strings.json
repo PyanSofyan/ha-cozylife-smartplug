@@ -1,21 +1,33 @@
 {
-    "config": {
-        "step": {
-            "user": {
-                "title": "Add CozyLife Device",
-                "description": "Set up your device",
-                "data": {
-                    "ip_address": "IP Address",
-                    "device_name": "Device Name",
-                    "device_type": "Device Type"
-                }
-            }
-        },
-        "error": {
-            "cannot_connect": "Failed to connect to device"
-        },
-        "abort": {
-            "already_configured": "Device is already configured"
-        }
+  "config": {
+    "step": {
+      "user": {
+        "title": "Authorize CozyLife",
+        "description": "Enter the current Identity Authorization code shown in the CozyLife app under Account Settings → Personal Information. Your account token and authorization code are not stored.",
+        "data": {"authorization_code": "Authorization code"}
+      },
+      "device": {
+        "title": "Choose a CozyLife device",
+        "description": "Choose a Smart Switch or Metering Socket. Name, model, and cloud endpoint come from your account; the LAN IP is discovered automatically. If LAN discovery is unavailable, cloud control remains available.",
+        "data": {"device_id": "Device"}
+      },
+      "reconfigure": {
+        "title": "Refresh CozyLife authorization",
+        "description": "Enter a current authorization code to refresh the device key and relay endpoint, or upgrade an existing local-only entry. Existing entity IDs are preserved.",
+        "data": {"authorization_code": "Authorization code"}
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not read CozyLife account metadata. Try again later.",
+      "invalid_auth": "Authorization was rejected. Obtain a current Identity Authorization code from the app.",
+      "device_not_found": "Choose a device from the list."
+    },
+    "abort": {
+      "already_configured": "Device is already configured. Reconfigure the existing entry to enable or refresh cloud fallback.",
+      "no_devices": "No supported Smart Switch or Metering Socket with cloud credentials was found.",
+      "device_not_found": "This device was not found in the authorized account.",
+      "authorization_required": "Use an Authorization code to add a device.",
+      "reconfigure_successful": "CozyLife device credentials and endpoints have been updated."
     }
+  }
 }

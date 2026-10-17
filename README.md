@@ -1,6 +1,6 @@
 # CozyLife Smart Plug - Home Assistant Integration
 
-A Home Assistant custom integration for controlling and monitoring CozyLife Smart Plug devices over the local network.
+A Home Assistant custom integration for controlling and monitoring CozyLife smart plugs and smart switches over your local network or the cloud. When local TCP control is unavailable, it automatically falls back to the cloud, just like the CozyLife mobile app.
 
 ## Features
 
@@ -54,8 +54,8 @@ Or manually:
 2. Click **Add Integration**
 3. Search for **CozyLife Smart Plug**
 4. Follow the configuration flow:
-   - Enter the IP address your CozyLife Smart Plug
-   - Configure Device Name as needed
+   - Enter the Identity Authorization code shown in the CozyLife app under Account Settings → Personal Information
+   - Select the device
 5. Click **Submit**
 
 ## Troubleshooting
